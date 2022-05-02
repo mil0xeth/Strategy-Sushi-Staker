@@ -1,5 +1,5 @@
 # Strategy-xSushi-Staker
-- The strategy stakes Sushi to compound the rewards for more Sushi.
+- The strategy stakes Sushi to xSushi compound the rewards for more Sushi.
 
 ## Installation and Setup
 
