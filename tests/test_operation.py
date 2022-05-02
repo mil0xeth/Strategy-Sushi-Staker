@@ -45,7 +45,7 @@ def test_emergency_exit(
 
 
 def test_profitable_harvest(
-    chain, accounts, token, vault, strategy, user, strategist, amount, RELATIVE_APPROX
+    xsushi, token_whale, chain, accounts, token, vault, strategy, user, strategist, amount, RELATIVE_APPROX
 ):
     # Deposit to the vault
     token.approve(vault.address, amount, {"from": user})
@@ -56,8 +56,11 @@ def test_profitable_harvest(
     chain.sleep(1)
     strategy.harvest()
     assert pytest.approx(strategy.estimatedTotalAssets(), rel=RELATIVE_APPROX) == amount
+    before_pps = vault.pricePerShare()
 
-    # TODO: Add some code before harvest #2 to simulate earning yield
+    # Add some code before harvest #2 to simulate earning yield
+    token.transfer(xsushi, token.balanceOf(xsushi)*0.02, {'from': token_whale})
+    #token.transfer(strategy, token.balanceOf(xsushi)*0.02, {'from': token_whale})
 
     # Harvest 2: Realize profit
     chain.sleep(1)
@@ -65,9 +68,9 @@ def test_profitable_harvest(
     chain.sleep(3600 * 6)  # 6 hrs needed for profits to unlock
     chain.mine(1)
     profit = token.balanceOf(vault.address)  # Profits go to vault
-    # TODO: Uncomment the lines below
-    # assert token.balanceOf(strategy) + profit > amount
-    # assert vault.pricePerShare() > before_pps
+    #assert token.balanceOf(strategy) + profit > amount
+    assert strategy.estimatedTotalAssets() + profit > amount
+    assert vault.pricePerShare() > before_pps
 
 
 def test_change_debt(
@@ -90,10 +93,10 @@ def test_change_debt(
 
     # In order to pass this tests, you will need to implement prepareReturn.
     # TODO: uncomment the following lines.
-    # vault.updateStrategyDebtRatio(strategy.address, 5_000, {"from": gov})
-    # chain.sleep(1)
-    # strategy.harvest()
-    # assert pytest.approx(strategy.estimatedTotalAssets(), rel=RELATIVE_APPROX) == half
+    vault.updateStrategyDebtRatio(strategy.address, 5_000, {"from": gov})
+    chain.sleep(1)
+    strategy.harvest()
+    assert pytest.approx(strategy.estimatedTotalAssets(), rel=RELATIVE_APPROX) == half
 
 
 def test_sweep(gov, vault, strategy, token, user, amount, weth, weth_amout):

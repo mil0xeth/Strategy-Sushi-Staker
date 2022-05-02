@@ -40,16 +40,25 @@ def keeper(accounts):
 
 @pytest.fixture
 def token():
-    token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"  # this should be the address of the ERC-20 used by the strategy/vault (DAI)
+    token_address = "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2"  # SUSHI
     yield Contract(token_address)
+
+@pytest.fixture
+def xsushi():
+    token_address = "0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272"  # xSUSHI
+    yield Contract(token_address)
+
+@pytest.fixture
+def token_whale(accounts):
+    yield accounts.at("0xf977814e90da44bfa03b6295a0616a897441acec", force=True) #Reserve = Binance8
 
 
 @pytest.fixture
-def amount(accounts, token, user):
+def amount(accounts, token, user, token_whale):
     amount = 10_000 * 10 ** token.decimals()
     # In order to get some funds for the token you are about to use,
     # it impersonate an exchange address to use it's funds.
-    reserve = accounts.at("0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True)
+    reserve = token_whale
     token.transfer(user, amount, {"from": reserve})
     yield amount
 
