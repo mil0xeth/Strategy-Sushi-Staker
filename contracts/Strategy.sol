@@ -73,25 +73,6 @@ contract Strategy is BaseStrategy {
             _loss = 0;
         }
 
-
-        /* 
-        uint256 wantAmountBefore = balanceOfWant();
-        if (_debtOutstanding > 0) {
-            (_debtPayment, _loss) = liquidatePosition(_debtOutstanding);
-        }
-
-        _profit += balanceOfWant().sub(wantAmountBefore);
-
-        // net out PnL
-        if (_profit > _loss) {
-            _profit = _profit.sub(_loss);
-            _loss = 0;
-        } else {
-            _loss = _loss.sub(_profit);
-            _profit = 0;
-        }
-        */
-
     }
 
     function adjustPosition(uint256 _debtOutstanding) internal override {
@@ -148,11 +129,11 @@ contract Strategy is BaseStrategy {
 
     /////////////////// GETTERS:
 
-    function balanceOfWant() public view returns (uint){
+    function balanceOfWant() internal view returns (uint256){
         return want.balanceOf(address(this));
     }
 
-    function balanceOfXSushi() public view returns (uint){
+    function balanceOfXSushi() internal view returns (uint256){
         return xSushi.balanceOf(address(this));
     }
 
