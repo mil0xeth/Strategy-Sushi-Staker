@@ -26,6 +26,8 @@ contract Strategy is BaseStrategy {
     using SafeMath for uint256;
 
     ISushiBar public constant xSushi = ISushiBar(0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272);
+    //Big Number to allow sushiPerXSushi to account for all decimals without rounding:
+    uint256 internal constant BigNumber = 1e36;
 
     constructor(address _vault) public BaseStrategy(_vault) {
         // maxReportDelay = 6300;
@@ -41,7 +43,7 @@ contract Strategy is BaseStrategy {
 
     function estimatedTotalAssets() public view override returns (uint256) {
         //want in wallet + want amount of xSushi
-        return balanceOfXSushi().mul(sushiPerXSushi()).div(1e18).add(balanceOfWant());        
+        return balanceOfXSushi().mul(sushiPerXSushi()).div(BigNumber).add(balanceOfWant());        
     }
 
     function prepareReturn(uint256 _debtOutstanding)
@@ -106,7 +108,7 @@ contract Strategy is BaseStrategy {
         uint256 wantBalance = balanceOfWant();
         if (wantBalance < _amountNeeded){
             //Unstake xSushi amount in want corresponding to _amountNeeded (or total balance of xSushi (unlikely)) 
-            xSushi.leave(Math.min(balanceOfXSushi(), _amountNeeded.sub(wantBalance).mul(1e18).div(sushiPerXSushi())));
+            xSushi.leave(Math.min(balanceOfXSushi(), _amountNeeded.sub(wantBalance).mul(BigNumber).div(sushiPerXSushi())));
             _liquidatedAmount = Math.min(balanceOfWant(), _amountNeeded);
             _loss = _amountNeeded > _liquidatedAmount ? _amountNeeded.sub(_liquidatedAmount) : 0;
         } else {
@@ -155,7 +157,7 @@ contract Strategy is BaseStrategy {
     }
 
     function sushiPerXSushi() internal view returns (uint256){
-        return want.balanceOf(address(xSushi)).mul(1e18).div(xSushi.totalSupply());
+        return want.balanceOf(address(xSushi)).mul(BigNumber).div(xSushi.totalSupply());
     }
 
     ////////////////// SETTERS:
