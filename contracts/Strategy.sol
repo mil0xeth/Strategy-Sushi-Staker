@@ -97,8 +97,9 @@ contract Strategy is BaseStrategy {
         }
     }
 
-    function liquidateAllPositions() internal override returns (uint256 _amountFreed) {
-        (_amountFreed, ) = liquidatePosition(estimatedTotalAssets());
+    function liquidateAllPositions() internal override returns (uint256) {
+        xSushi.leave(balanceOfXSushi());
+        return balanceOfWant();
     }
 
 
