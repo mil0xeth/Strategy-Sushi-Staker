@@ -35,7 +35,7 @@ contract Strategy is BaseStrategy {
         // debtThreshold = 0;
     }
 
-    // ******** OVERRIDE THESE METHODS FROM BASE CONTRACT ************
+    // ******** OVERRIDE METHODS FROM BASE CONTRACT ************
 
     function name() external view override returns (string memory) {
         return "Strategy-xSushi-Staker";
@@ -101,7 +101,6 @@ contract Strategy is BaseStrategy {
         xSushi.leave(balanceOfXSushi());
         return balanceOfWant();
     }
-
 
     function prepareMigration(address _newStrategy) internal override {
         uint256 xSushiBalance = balanceOfXSushi();
