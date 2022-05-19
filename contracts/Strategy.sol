@@ -3,14 +3,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {
-    BaseStrategy,
-    StrategyParams
-} from "@yearnvaults/contracts/BaseStrategy.sol";
-import {
-    IERC20,
-    Address
-} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import {BaseStrategy,StrategyParams} from "@yearnvaults/contracts/BaseStrategy.sol";
+import {IERC20, Address} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 
 interface ISushiBar is IERC20 {
@@ -39,7 +33,7 @@ contract Strategy is BaseStrategy {
 
     function estimatedTotalAssets() public view override returns (uint256) {
         //want in wallet + want amount of xSushi
-        return balanceOfXSushi().mul(sushiPerXSushi()).div(AVOID_ROUNDING_DECIMALS).add(balanceOfWant());        
+        return balanceOfXSushi().mul(sushiPerXSushi()).div(AVOID_ROUNDING_DECIMALS).add(balanceOfWant());
     }
 
     function prepareReturn(uint256 _debtOutstanding)
@@ -53,7 +47,7 @@ contract Strategy is BaseStrategy {
     {
         uint256 totalDebt = vault.strategies(address(this)).totalDebt;
         uint256 totalAssetsAfterProfit = estimatedTotalAssets();
-        _profit = totalAssetsAfterProfit > totalDebt 
+        _profit = totalAssetsAfterProfit > totalDebt
             ? totalAssetsAfterProfit.sub(totalDebt)
             : 0;
 
@@ -84,7 +78,7 @@ contract Strategy is BaseStrategy {
     {
         uint256 wantBalance = balanceOfWant();
         if (wantBalance < _amountNeeded){
-            //Unstake xSushi amount in want corresponding to _amountNeeded (or total balance of xSushi (unlikely)) 
+            //Unstake xSushi amount in want corresponding to _amountNeeded (or total balance of xSushi (unlikely))
             xSushi.leave(Math.min(balanceOfXSushi(), _amountNeeded.sub(wantBalance).mul(AVOID_ROUNDING_DECIMALS).div(sushiPerXSushi())));
             _liquidatedAmount = Math.min(balanceOfWant(), _amountNeeded);
             _loss = _amountNeeded > _liquidatedAmount ? _amountNeeded.sub(_liquidatedAmount) : 0;
