@@ -8,8 +8,6 @@ import {
     StrategyParams
 } from "@yearnvaults/contracts/BaseStrategy.sol";
 import {
-    SafeERC20,
-    SafeMath,
     IERC20,
     Address
 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -21,13 +19,11 @@ interface ISushiBar is IERC20 {
 }
 
 contract Strategy is BaseStrategy {
-    using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
 
     ISushiBar public constant xSushi = ISushiBar(0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272);
-    //Big Number to allow sushiPerXSushi to account for all decimals without rounding:
-    uint256 internal constant BigNumber = 1e36;
+    //Big Number to multiply and subsequently divide after calculating ratio to allow sushiPerXSushi to account for all decimals without rounding:
+    uint256 internal constant AVOID_ROUNDING_DECIMALS = 1e27;
 
     constructor(address _vault) public BaseStrategy(_vault) {
         // maxReportDelay = 6300;
@@ -43,7 +39,7 @@ contract Strategy is BaseStrategy {
 
     function estimatedTotalAssets() public view override returns (uint256) {
         //want in wallet + want amount of xSushi
-        return balanceOfXSushi().mul(sushiPerXSushi()).div(BigNumber).add(balanceOfWant());        
+        return balanceOfXSushi().mul(sushiPerXSushi()).div(AVOID_ROUNDING_DECIMALS).add(balanceOfWant());        
     }
 
     function prepareReturn(uint256 _debtOutstanding)
@@ -89,7 +85,7 @@ contract Strategy is BaseStrategy {
         uint256 wantBalance = balanceOfWant();
         if (wantBalance < _amountNeeded){
             //Unstake xSushi amount in want corresponding to _amountNeeded (or total balance of xSushi (unlikely)) 
-            xSushi.leave(Math.min(balanceOfXSushi(), _amountNeeded.sub(wantBalance).mul(BigNumber).div(sushiPerXSushi())));
+            xSushi.leave(Math.min(balanceOfXSushi(), _amountNeeded.sub(wantBalance).mul(AVOID_ROUNDING_DECIMALS).div(sushiPerXSushi())));
             _liquidatedAmount = Math.min(balanceOfWant(), _amountNeeded);
             _loss = _amountNeeded > _liquidatedAmount ? _amountNeeded.sub(_liquidatedAmount) : 0;
         } else {
@@ -104,14 +100,12 @@ contract Strategy is BaseStrategy {
 
     function prepareMigration(address _newStrategy) internal override {
         uint256 xSushiBalance = balanceOfXSushi();
-        _checkAllowance(_newStrategy, address(xSushi), xSushiBalance);
         xSushi.transfer(_newStrategy, xSushiBalance);
     }
 
     function protectedTokens() internal view override returns (address[] memory){}
 
     function ethToWant(uint _amtInWei) public view override returns (uint){return _amtInWei;}
-
 
     /////////////////// HELPERS:
 
@@ -129,21 +123,23 @@ contract Strategy is BaseStrategy {
 
     /////////////////// GETTERS:
 
-    function balanceOfWant() internal view returns (uint256){
+    function balanceOfWant() public view returns (uint256){
         return want.balanceOf(address(this));
     }
 
-    function balanceOfXSushi() internal view returns (uint256){
+    function balanceOfXSushi() public view returns (uint256){
         return xSushi.balanceOf(address(this));
     }
 
-    function sushiPerXSushi() internal view returns (uint256){
-        return want.balanceOf(address(xSushi)).mul(BigNumber).div(xSushi.totalSupply());
+    function sushiPerXSushi() public view returns (uint256){
+        return want.balanceOf(address(xSushi)).mul(AVOID_ROUNDING_DECIMALS).div(xSushi.totalSupply());
     }
 
-    ////////////////// SETTERS:
+    ////////////////// EMERGENCY UNSTAKE:
 
-
+    function emergencyUnstakeXSushi(uint256 _amount) external onlyEmergencyAuthorized {
+        xSushi.leave(_amount);
+    }
 
 
 
