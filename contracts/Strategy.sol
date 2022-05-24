@@ -16,13 +16,10 @@ contract Strategy is BaseStrategy {
     using Address for address;
 
     ISushiBar public constant xSushi = ISushiBar(0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272);
-    //Big Number to multiply and subsequently divide after calculating ratio to allow sushiPerXSushi to account for all decimals without rounding:
+    //Big number to guarantee sushiPerXSushi to account for all decimals without rounding:
     uint256 internal constant AVOID_ROUNDING_DECIMALS = 1e27;
 
     constructor(address _vault) public BaseStrategy(_vault) {
-        // maxReportDelay = 6300;
-        // profitFactor = 100;
-        // debtThreshold = 0;
     }
 
     // ******** OVERRIDE METHODS FROM BASE CONTRACT ************
@@ -32,7 +29,6 @@ contract Strategy is BaseStrategy {
     }
 
     function estimatedTotalAssets() public view override returns (uint256) {
-        //want in wallet + want amount of xSushi
         return balanceOfXSushi().mul(sushiPerXSushi()).div(AVOID_ROUNDING_DECIMALS).add(balanceOfWant());
     }
 
