@@ -20,6 +20,7 @@ contract Strategy is BaseStrategy {
     uint256 internal constant AVOID_ROUNDING_DECIMALS = 1e27;
 
     constructor(address _vault) public BaseStrategy(_vault) {
+        want.safeApprove(address(xSushi), type(uint256).max);
     }
 
     // ******** OVERRIDE METHODS FROM BASE CONTRACT ************
@@ -63,7 +64,6 @@ contract Strategy is BaseStrategy {
 
     function adjustPosition(uint256 _debtOutstanding) internal override {
         uint256 wantBalance = balanceOfWant();
-        _checkAllowance(address(xSushi), address(want), wantBalance);
         xSushi.enter(balanceOfWant());
     }
 
@@ -96,20 +96,6 @@ contract Strategy is BaseStrategy {
     function protectedTokens() internal view override returns (address[] memory){}
 
     function ethToWant(uint _amtInWei) public view override returns (uint){return _amtInWei;}
-
-    /////////////////// HELPERS:
-
-    function _checkAllowance(
-        address _contract,
-        address _token,
-        uint256 _amount
-    ) internal {
-        if (IERC20(_token).allowance(address(this), _contract) < _amount) {
-            IERC20(_token).safeApprove(_contract, 0);
-            IERC20(_token).safeApprove(_contract, type(uint256).max);
-        }
-    }
-
 
     /////////////////// GETTERS:
 
