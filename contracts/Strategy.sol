@@ -12,14 +12,21 @@ interface ISushiBar is IERC20 {
     function leave(uint _share) external;
 }
 
+interface IBaseFee {
+    function isCurrentBaseFeeAcceptable() external view returns (bool);
+}
+
 contract Strategy is BaseStrategy {
     using Address for address;
 
     ISushiBar public constant xSushi = ISushiBar(0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272);
     //Big number to guarantee sushiPerXSushi to account for all decimals without rounding:
     uint256 internal constant AVOID_ROUNDING_DECIMALS = 1e27;
+    bool internal forceHarvestTriggerOnce;
+    uint256 creditThreshold = 5e5 * 1e18;
 
     constructor(address _vault) public BaseStrategy(_vault) {
+        maxReportDelay = 35 days;
         want.safeApprove(address(xSushi), type(uint256).max);
     }
 
@@ -27,6 +34,42 @@ contract Strategy is BaseStrategy {
 
     function name() external view override returns (string memory) {
         return "Strategy-xSushi-Staker";
+    }
+
+    function harvestTrigger(uint256 callCostinEth)
+        public
+        view
+        override
+        returns (bool)
+    {
+        // Should not trigger if strategy is not active (no assets and no debtRatio). This means we don't need to adjust keeper job.
+        if (!isActive()) {
+            return false;
+        }
+
+        // check if the base fee gas price is higher than we allow. if it is, block harvests.
+        if (!isBaseFeeAcceptable()) {
+            return false;
+        }
+
+        // trigger if we want to manually harvest, but only if our gas price is acceptable
+        if (forceHarvestTriggerOnce) {
+            return true;
+        }
+
+        StrategyParams memory params = vault.strategies(address(this));
+        // harvest once we reach our maxDelay if our gas price is okay
+        if (block.timestamp.sub(params.lastReport) > maxReportDelay) {
+            return true;
+        }
+
+        // harvest our credit if it's above our threshold
+        if (vault.creditAvailable() > creditThreshold) {
+            return true;
+        }
+
+        // otherwise, we don't harvest
+        return false;
     }
 
     function estimatedTotalAssets() public view override returns (uint256) {
@@ -60,6 +103,8 @@ contract Strategy is BaseStrategy {
             _loss = 0;
         }
 
+        // we're done harvesting, so reset our trigger if we used it
+        forceHarvestTriggerOnce = false;
     }
 
     function adjustPosition(uint256 _debtOutstanding) internal override {
@@ -97,6 +142,11 @@ contract Strategy is BaseStrategy {
 
     function ethToWant(uint _amtInWei) public view override returns (uint){return _amtInWei;}
 
+    // check if the current baseFee is below our external target
+    function isBaseFeeAcceptable() internal view returns (bool) {
+        return IBaseFee(0xb5e1CAcB567d98faaDB60a1fD4820720141f064F).isCurrentBaseFeeAcceptable();
+    }
+
     /////////////////// GETTERS:
 
     function balanceOfWant() public view returns (uint256){
@@ -109,6 +159,21 @@ contract Strategy is BaseStrategy {
 
     function sushiPerXSushi() public view returns (uint256){
         return want.balanceOf(address(xSushi)).mul(AVOID_ROUNDING_DECIMALS).div(xSushi.totalSupply());
+    }
+
+    /////////////////// Manual harvest through keepers:
+    function setForceHarvestTriggerOnce(bool _forceHarvestTriggerOnce)
+        external
+        onlyVaultManagers
+    {
+        forceHarvestTriggerOnce = _forceHarvestTriggerOnce;
+    }
+
+    function setCreditThreshold(uint256 _creditThreshold)
+        external
+        onlyVaultManagers
+    {
+        creditThreshold = _creditThreshold;
     }
 
     ////////////////// EMERGENCY UNSTAKE:
