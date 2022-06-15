@@ -23,7 +23,7 @@ contract Strategy is BaseStrategy {
     //Big number to guarantee sushiPerXSushi to account for all decimals without rounding:
     uint256 internal constant AVOID_ROUNDING_DECIMALS = 1e27;
     bool internal forceHarvestTriggerOnce;
-    uint256 creditThreshold = 5e5 * 1e18;
+    uint256 public creditThreshold = 5e5 * 1e18;
 
     constructor(address _vault) public BaseStrategy(_vault) {
         maxReportDelay = 35 days;
