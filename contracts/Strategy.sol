@@ -108,7 +108,6 @@ contract Strategy is BaseStrategy {
     }
 
     function adjustPosition(uint256 _debtOutstanding) internal override {
-        uint256 wantBalance = balanceOfWant();
         xSushi.enter(balanceOfWant());
     }
 
